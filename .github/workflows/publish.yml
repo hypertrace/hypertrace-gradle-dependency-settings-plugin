@@ -1,0 +1,26 @@
+name: Publish artifacts
+on:
+# Will only run when release is published. 
+  release:
+    types: 
+      - created
+  workflow_dispatch:
+
+jobs:
+  publish-artifacts:
+    runs-on: ubuntu-22.04
+    steps:
+      # Set fetch-depth: 0 to fetch commit history and tags for use in version calculation
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: publish java artifacts
+        uses: hypertrace/github-actions/gradle@main
+        with: 
+          args: publish
+        env:
+          ORG_GRADLE_PROJECT_artifactory_contextUrl: ${{ secrets.ARTIFACTORY_CONTEXT_URL }}
+          ORG_GRADLE_PROJECT_artifactory_user: ${{ secrets.ARTIFACTORY_PUBLISH_USER }}
+          ORG_GRADLE_PROJECT_artifactory_password: ${{ secrets.ARTIFACTORY_PUBLISH_TOKEN }}
