@@ -53,6 +53,26 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                         }));
   }
 
+  private DependencyPluginSettingExtension createSettingsExtension(Settings target) {
+    return target
+        .getExtensions()
+        .create(
+            DependencyPluginSettingExtension.EXTENSION_NAME,
+            DependencyPluginSettingExtension.class);
+  }
+
+  private DependencyPluginProjectExtension addProjectExtension(Project project) {
+    return project
+        .getExtensions()
+        .create(
+            DependencyPluginProjectExtension.EXTENSION_NAME,
+            DependencyPluginProjectExtension.class);
+  }
+
+  /**
+   * If autoApplyBom is true, this adds a BOM automatically to the target project. Configuration is
+   * determined by {@link #resolveBomHostConfigurationName(Project)}
+   */
   private void addBomDependencyIfRequested(
       Project project,
       DependencyPluginSettingExtension settingExtension,
@@ -72,6 +92,10 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         });
   }
 
+  /**
+   * Determine the configuration to which the BOM dependency will be added. We default to `api` if
+   * available, else fallback to `implementation`
+   */
   private String resolveBomHostConfigurationName(Project project) {
     return Optional.ofNullable(
             project.getConfigurations().findByName(JavaPlugin.API_CONFIGURATION_NAME))
@@ -81,6 +105,7 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         .getName();
   }
 
+  /** Uses the configuration and catalog to get a reference to the configured BOM dependency */
   private Provider<MinimalExternalModuleDependency> resolveBomDependency(
       Project project, DependencyPluginSettingExtension settingExtension) {
     return settingExtension
@@ -99,22 +124,22 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                                             + artifactName))));
   }
 
-  private DependencyPluginSettingExtension createSettingsExtension(Settings target) {
-    return target
-        .getExtensions()
-        .create(
-            DependencyPluginSettingExtension.EXTENSION_NAME,
-            DependencyPluginSettingExtension.class);
-  }
-
-  private DependencyPluginProjectExtension addProjectExtension(Project project) {
-    return project
-        .getExtensions()
-        .create(
-            DependencyPluginProjectExtension.EXTENSION_NAME,
-            DependencyPluginProjectExtension.class);
-  }
-
+  /**
+   * This adds a version catalog to be available for all projects based on the configured names and
+   * versions. It overrides the bom version from the catalog as declared in the plugin config.
+   * Equivalent to the settings declaration: <br>
+   *
+   * <pre>
+   * dependencyResolutionManagement {
+   *   versionCatalogs {
+   *     create("<catalogName>") {
+   *       from("<catalogGroup>:<catalogArtifact>:<catalogVersion>")
+   *       version("<bomVersionName>", "<bomVersion>")
+   *     }
+   *   }
+   * }
+   * </pre>
+   */
   private void addVersionCatalog(
       Settings settings, DependencyPluginSettingExtension settingExtension) {
     settings.dependencyResolutionManagement(
@@ -129,6 +154,21 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         });
   }
 
+  /**
+   * This adds repositories that will be available for all projects to use for resolving
+   * dependencies. Equivalent to the settings declaration: <br>
+   *
+   * <pre>
+   * dependencyResolutionManagement {
+   *   repositories {
+   *     mavenLocal()
+   *     mavenCentral()
+   *     maven("https://packages.confluent.io/maven")
+   *     maven("https://hypertrace.jfrog.io/artifactory/maven")
+   *   }
+   * }
+   * </pre>
+   */
   private void addDependencyRepositories(Settings settings) {
     settings.dependencyResolutionManagement(
         dependencyResolutionManagement ->
@@ -141,6 +181,26 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                 }));
   }
 
+  /**
+   * This enables strict dependency locking for the specified project and configurations. Equivalent
+   * to project declaration: <br>
+   *
+   * <pre>
+   *     dependencyLocking {
+   *       lockMode.set(LockMode.STRICT)
+   *     }
+   *
+   *     configurations {
+   *       named("configurationsToLock[0]") {
+   *         resolutionStrategy.activateDependencyLocking()
+   *       }
+   *       ...
+   *       named("configurationsToLock[n]") {
+   *         resolutionStrategy.activateDependencyLocking()
+   *       }
+   *     }
+   * </pre>
+   */
   private void addDependencyLocking(
       Project targetProject, DependencyPluginProjectExtension extension) {
     targetProject.getDependencyLocking().getLockMode().set(LockMode.STRICT);
@@ -157,6 +217,14 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                     }));
   }
 
+  /**
+   * Adds a task to the target project that resolves all configurations that we've enabled for
+   * locking for. In conjunction with the --write-locks flag, this allows an easy way to update the
+   * locks for all configurations across all projects with a common task name.
+   *
+   * <p>Derived from:
+   * https://docs.gradle.org/current/userguide/dependency_locking.html#lock_all_configurations_in_one_build_execution
+   */
   private void addLockTask(Project targetProject, DependencyPluginProjectExtension extension) {
     targetProject
         .getTasks()
@@ -184,16 +252,6 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
 
   private VersionCatalog getCatalogByName(Project project, String catalogName) {
     return project.getExtensions().getByType(VersionCatalogsExtension.class).named(catalogName);
-  }
-
-  private void addHypertraceRepositoryToProject(Project project) {
-    project
-        .getRepositories()
-        .maven(
-            mavenArtifactRepository -> {
-              mavenArtifactRepository.setName("hypertrace-maven");
-              mavenArtifactRepository.setUrl(HYPERTRACE_REPOSITORY_URL);
-            });
   }
 
   private void configureConfluent(MavenArtifactRepository artifactRepository) {
