@@ -157,6 +157,10 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
               dependencyResolutionManagement
                   .getVersionCatalogs()
                   .create(settingExtension.catalogName.get());
+          if (!settingExtension.catalogVersion.isPresent()) {
+            throw new GradleException(
+                "catalogVersion must be set in your settings.gradle.kts file. See https://github.com/hypertrace/hypertrace-gradle-dependency-settings-plugin/blob/main/README.md for details");
+          }
           catalogBuilder.from(settingExtension.getCatalogArtifactNotation().get());
           catalogBuilder.version(
               settingExtension.bomVersionName.get(), settingExtension.bomVersion.get());
