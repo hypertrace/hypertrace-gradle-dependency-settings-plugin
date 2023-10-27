@@ -10,6 +10,7 @@ configured only once in a `dependencySettings` extension in settings.gradle.kts.
 
 - Adds a version catalog (default name: `commonLibs`, default
   artifact: `org.hypertrace.bom:hypertrace-version-catalog:<catalogVersion>`. catalogVersion must be set explicitly)
+- Renames the default `libs` catalog (from `libs.versions.toml`) to `localLibs` to disambiguate
 - For each java project:
     - Adds dependency repositories of mavenLocal, mavenCentral, confluent and hypertrace
     - If `autoApplyBom` is specified (default: true), adds a BOM dependency to the `api` configuration (falling back
@@ -26,6 +27,7 @@ Example usage in `settings.gradle.kts`:
     plugins {
       id("org.hypertrace.dependency-settings") version "0.1.0"
     }
+
 
     configure<DependencyPluginSettingExtension> {
       catalogVersion.set("0.1.0")
