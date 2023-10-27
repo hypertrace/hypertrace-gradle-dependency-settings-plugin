@@ -9,7 +9,6 @@ public class DependencyPluginSettingExtension {
   static final String EXTENSION_NAME = "dependencySettings";
   private static final String DEFAULT_CATALOG_GROUP = "org.hypertrace.bom";
   private static final String DEFAULT_CATALOG_ARTIFACT = "hypertrace-version-catalog";
-  private static final String DEFAULT_CATALOG_VERSION = "+";
   private static final String DEFAULT_CATALOG_NAME = "commonLibs";
   private static final String DEFAULT_BOM_ARTIFACT_NAME = "hypertrace.bom";
   private static final String DEFAULT_BOM_VERSION_NAME = "hypertrace.bom";
@@ -31,7 +30,7 @@ public class DependencyPluginSettingExtension {
     this.catalogArtifact =
         objectFactory.property(String.class).convention(DEFAULT_CATALOG_ARTIFACT);
     this.catalogArtifact.disallowUnsafeRead();
-    this.catalogVersion = objectFactory.property(String.class).convention(DEFAULT_CATALOG_VERSION);
+    this.catalogVersion = objectFactory.property(String.class);
     this.catalogVersion.disallowUnsafeRead();
     this.catalogName = objectFactory.property(String.class).convention(DEFAULT_CATALOG_NAME);
     this.catalogName.disallowUnsafeRead();
