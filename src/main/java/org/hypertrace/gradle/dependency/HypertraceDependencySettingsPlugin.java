@@ -29,6 +29,7 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         .getGradle()
         .settingsEvaluated(
             unused -> {
+              this.updateLocalCatalogNameConvention(settings);
               this.addDependencyRepositories(settings);
               this.addVersionCatalog(settings, settingExtension);
             });
@@ -67,6 +68,14 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         .create(
             DependencyPluginProjectExtension.EXTENSION_NAME,
             DependencyPluginProjectExtension.class);
+  }
+
+  private void updateLocalCatalogNameConvention(Settings settings) {
+    // Update convention to make it clear which libs are local and which come from common catalog
+    settings
+        .getDependencyResolutionManagement()
+        .getDefaultLibrariesExtensionName()
+        .convention("localLibs");
   }
 
   /**
