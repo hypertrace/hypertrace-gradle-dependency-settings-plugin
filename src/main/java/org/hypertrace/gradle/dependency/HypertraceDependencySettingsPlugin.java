@@ -29,6 +29,7 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         .getGradle()
         .settingsEvaluated(
             unused -> {
+              this.updateLocalCatalogNameConvention(settings);
               this.addDependencyRepositories(settings);
               this.addVersionCatalog(settings, settingExtension);
             });
@@ -67,6 +68,14 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
         .create(
             DependencyPluginProjectExtension.EXTENSION_NAME,
             DependencyPluginProjectExtension.class);
+  }
+
+  private void updateLocalCatalogNameConvention(Settings settings) {
+    // Update convention to make it clear which libs are local and which come from common catalog
+    settings
+        .getDependencyResolutionManagement()
+        .getDefaultLibrariesExtensionName()
+        .convention("localLibs");
   }
 
   /**
@@ -148,6 +157,10 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
               dependencyResolutionManagement
                   .getVersionCatalogs()
                   .create(settingExtension.catalogName.get());
+          if (!settingExtension.catalogVersion.isPresent()) {
+            throw new GradleException(
+                "catalogVersion must be set in your settings.gradle.kts file. See https://github.com/hypertrace/hypertrace-gradle-dependency-settings-plugin/blob/main/README.md for details");
+          }
           catalogBuilder.from(settingExtension.getCatalogArtifactNotation().get());
           catalogBuilder.version(
               settingExtension.bomVersionName.get(), settingExtension.bomVersion.get());

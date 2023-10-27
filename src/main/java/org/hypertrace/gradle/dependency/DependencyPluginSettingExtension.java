@@ -9,10 +9,10 @@ public class DependencyPluginSettingExtension {
   static final String EXTENSION_NAME = "dependencySettings";
   private static final String DEFAULT_CATALOG_GROUP = "org.hypertrace.bom";
   private static final String DEFAULT_CATALOG_ARTIFACT = "hypertrace-version-catalog";
-  private static final String DEFAULT_CATALOG_VERSION = "+";
   private static final String DEFAULT_CATALOG_NAME = "commonLibs";
   private static final String DEFAULT_BOM_ARTIFACT_NAME = "hypertrace.bom";
   private static final String DEFAULT_BOM_VERSION_NAME = "hypertrace.bom";
+  private static final String DEFAULT_BOM_VERSION = "+";
   private static final boolean DEFAULT_USE_DEPENDENCY_LOCKING = true;
 
   public final Property<String> catalogGroup;
@@ -31,7 +31,7 @@ public class DependencyPluginSettingExtension {
     this.catalogArtifact =
         objectFactory.property(String.class).convention(DEFAULT_CATALOG_ARTIFACT);
     this.catalogArtifact.disallowUnsafeRead();
-    this.catalogVersion = objectFactory.property(String.class).convention(DEFAULT_CATALOG_VERSION);
+    this.catalogVersion = objectFactory.property(String.class);
     this.catalogVersion.disallowUnsafeRead();
     this.catalogName = objectFactory.property(String.class).convention(DEFAULT_CATALOG_NAME);
     this.catalogName.disallowUnsafeRead();
@@ -43,7 +43,7 @@ public class DependencyPluginSettingExtension {
     this.bomArtifactName.disallowUnsafeRead();
     this.bomVersionName = objectFactory.property(String.class).convention(DEFAULT_BOM_VERSION_NAME);
     this.bomVersionName.disallowUnsafeRead();
-    this.bomVersion = objectFactory.property(String.class).convention(this.catalogVersion);
+    this.bomVersion = objectFactory.property(String.class).convention(DEFAULT_BOM_VERSION);
     this.bomVersion.disallowUnsafeRead();
   }
 
