@@ -1,5 +1,8 @@
 package org.hypertrace.gradle.dependency;
 
+import java.io.File;
+import java.util.Optional;
+import javax.inject.Inject;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -9,18 +12,25 @@ import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
 import org.gradle.api.artifacts.dsl.LockMode;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.flow.FlowProviders;
+import org.gradle.api.flow.FlowScope;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.VersionCatalogBuilder;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
+import org.hypertrace.gradle.dependency.DependencyPluginSettingExtension.DependencyLockingMode;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Optional;
-
-public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
+public abstract class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
   private static final String HYPERTRACE_REPOSITORY_URL =
       "https://hypertrace.jfrog.io/artifactory/maven";
   private static final String CONFLUENT_REPOSITORY_URL = "https://packages.confluent.io/maven";
+
+  @Inject
+  protected abstract FlowScope getFlowScope();
+
+  @Inject
+  protected abstract FlowProviders getFlowProviders();
 
   @Override
   public void apply(@NotNull Settings settings) {
@@ -47,11 +57,16 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                               this.addProjectExtension(project);
                           this.addBomDependencyIfRequested(
                               project, settingExtension, projectExtension);
-                          if (settingExtension.useDependencyLocking.get()) {
+                          if (settingExtension
+                              .dependencyLockMode
+                              .map(this::shouldEnableProjectLocking)
+                              .get()) {
                             this.addDependencyLocking(project, projectExtension);
                             this.addLockTask(project, projectExtension);
                           }
                         }));
+
+    this.addSettingsLockDeletionIfNeeded(settings, settingExtension);
   }
 
   private DependencyPluginSettingExtension createSettingsExtension(Settings target) {
@@ -70,12 +85,63 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
             DependencyPluginProjectExtension.class);
   }
 
+  private void addSettingsLockDeletionIfNeeded(
+      Settings settings, DependencyPluginSettingExtension settingExtension) {
+    // This is confusing. Based off https://docs.gradle.org/current/userguide/dataflow_actions.html
+
+    // We only get the build work result to make sure this isn't available until after build is
+    // complete
+    getFlowScope()
+        .always(
+            DeleteSettingsLockfileAction.class,
+            spec ->
+                spec.getParameters()
+                    .getDeleteTarget()
+                    .set(
+                        getFlowProviders()
+                            .getBuildWorkResult()
+                            .zip(
+                                settingExtension.dependencyLockMode,
+                                (result, lockMode) ->
+                                    shouldEnableSettingsLocking(lockMode)
+                                        ? null // No file to delete if locking enabled
+                                        : new File(
+                                            settings.getSettingsDir(),
+                                            "settings-gradle.lockfile"))));
+  }
+
   private void updateLocalCatalogNameConvention(Settings settings) {
     // Update convention to make it clear which libs are local and which come from common catalog
     settings
         .getDependencyResolutionManagement()
         .getDefaultLibrariesExtensionName()
         .convention("localLibs");
+  }
+
+  private boolean shouldEnableProjectLocking(DependencyLockingMode mode) {
+    switch (mode) {
+      case PROJECTS_ONLY:
+      case PROJECTS_AND_SETTINGS:
+        return true;
+      case DISABLED:
+        return false;
+      default:
+        throw new UnsupportedOperationException(
+            String.format("Unrecognized locking mode: %s", mode));
+    }
+  }
+
+  private boolean shouldEnableSettingsLocking(DependencyLockingMode mode) {
+    switch (mode) {
+      case PROJECTS_AND_SETTINGS:
+        return true;
+      case PROJECTS_ONLY:
+      case DISABLED:
+        return false;
+      default:
+        throw new UnsupportedOperationException(
+            String.format("Unrecognized locking mode: %s", mode));
+    }
   }
 
   /**

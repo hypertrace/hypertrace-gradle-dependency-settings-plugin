@@ -13,13 +13,12 @@ public class DependencyPluginSettingExtension {
   private static final String DEFAULT_BOM_ARTIFACT_NAME = "hypertrace.bom";
   private static final String DEFAULT_BOM_VERSION_NAME = "hypertrace.bom";
   private static final String DEFAULT_BOM_VERSION = "+";
-  private static final boolean DEFAULT_USE_DEPENDENCY_LOCKING = true;
 
   public final Property<String> catalogGroup;
   public final Property<String> catalogArtifact;
   public final Property<String> catalogVersion;
   public final Property<String> catalogName;
-  public final Property<Boolean> useDependencyLocking;
+  public final Property<DependencyLockingMode> dependencyLockMode;
   public final Property<String> bomArtifactName;
   public final Property<String> bomVersionName;
   public final Property<String> bomVersion;
@@ -35,9 +34,11 @@ public class DependencyPluginSettingExtension {
     this.catalogVersion.disallowUnsafeRead();
     this.catalogName = objectFactory.property(String.class).convention(DEFAULT_CATALOG_NAME);
     this.catalogName.disallowUnsafeRead();
-    this.useDependencyLocking =
-        objectFactory.property(Boolean.class).convention(DEFAULT_USE_DEPENDENCY_LOCKING);
-    this.useDependencyLocking.disallowUnsafeRead();
+    this.dependencyLockMode =
+        objectFactory
+            .property(DependencyLockingMode.class)
+            .convention(DependencyLockingMode.PROJECTS_ONLY);
+    this.dependencyLockMode.disallowUnsafeRead();
     this.bomArtifactName =
         objectFactory.property(String.class).convention(DEFAULT_BOM_ARTIFACT_NAME);
     this.bomArtifactName.disallowUnsafeRead();
@@ -56,5 +57,11 @@ public class DependencyPluginSettingExtension {
                         versionString ->
                             String.format(
                                 "%s:%s:%s", groupString, artifactString, versionString))));
+  }
+
+  public enum DependencyLockingMode {
+    DISABLED,
+    PROJECTS_ONLY, // Default
+    PROJECTS_AND_SETTINGS // Typically not desired due to bugs in the settings lock.
   }
 }
