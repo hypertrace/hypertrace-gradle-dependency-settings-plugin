@@ -1,5 +1,8 @@
 package org.hypertrace.gradle.dependency;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -13,14 +16,20 @@ import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.VersionCatalogBuilder;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Optional;
 
 public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
   private static final String HYPERTRACE_REPOSITORY_URL =
       "https://hypertrace.jfrog.io/artifactory/maven";
   private static final String CONFLUENT_REPOSITORY_URL = "https://packages.confluent.io/maven";
+  private static final List<String> DEFAULT_LOCKED_CONFIGURATIONS =
+      List.of(
+          JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+          JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
+          JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME,
+          JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME,
+          JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
 
   @Override
   public void apply(@NotNull Settings settings) {
@@ -45,6 +54,7 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                         unused -> {
                           DependencyPluginProjectExtension projectExtension =
                               this.addProjectExtension(project);
+                          this.assignDefaultConfigurationsToLock(project, projectExtension);
                           this.addBomDependencyIfRequested(
                               project, settingExtension, projectExtension);
                           if (settingExtension.useDependencyLocking.get()) {
@@ -228,6 +238,31 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                         configuration.getResolutionStrategy().activateDependencyLocking();
                       }
                     }));
+  }
+
+  private void assignDefaultConfigurationsToLock(
+      Project targetProject, DependencyPluginProjectExtension extension) {
+    // Default to this list
+    extension.configurationsToLock.convention(DEFAULT_LOCKED_CONFIGURATIONS);
+    // But if an integration test plugin is applied (now or later) reassign the default
+    targetProject
+        .getPluginManager()
+        .withPlugin(
+            "org.hypertrace.integration-test-plugin",
+            plugin -> {
+              targetProject
+                  .getExtensions()
+                  .getByType(SourceSetContainer.class)
+                  .named(
+                      "integrationTest",
+                      sourceSet -> {
+                        List<String> configurationsToLock =
+                            new ArrayList<>(DEFAULT_LOCKED_CONFIGURATIONS);
+                        configurationsToLock.add(sourceSet.getCompileClasspathConfigurationName());
+                        configurationsToLock.add(sourceSet.getRuntimeClasspathConfigurationName());
+                        extension.configurationsToLock.convention(configurationsToLock);
+                      });
+            });
   }
 
   /**
