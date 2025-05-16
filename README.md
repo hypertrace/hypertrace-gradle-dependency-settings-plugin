@@ -27,8 +27,10 @@ configured only once in a `dependencySettings` extension in settings.gradle.kts.
       on certain
       configurations (
       default: `annotationProcessor`, `compileClasspath`, `runtimeClasspath`, `testCompileClasspath`, `testRuntimeClasspath`)
+      - If integration tests are found, it will also add `integrationTestCompileClasspath` and
+        `integrationTestRuntimeClasspath`
     - If `useDependencyLocking` is specified (default: true), adds a project
-      task `resolveAndLockAll`which can be use in
+      task `resolveAndLockAll`which can be used in
       conjunction with the `--write-locks` flag to update all project lockfiles.
 
 Example usage in `settings.gradle.kts`:
