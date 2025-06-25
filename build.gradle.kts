@@ -1,7 +1,7 @@
 import org.hypertrace.gradle.publishing.License.APACHE_2_0
 
 plugins {
-  id("org.hypertrace.publish-plugin") version "1.0.5"
+  id("org.hypertrace.publish-plugin") version "1.1.1"
   id("org.hypertrace.ci-utils-plugin") version "0.3.2"
   `java-gradle-plugin`
 }

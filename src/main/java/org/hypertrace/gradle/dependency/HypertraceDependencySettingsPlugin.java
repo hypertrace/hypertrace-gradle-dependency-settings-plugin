@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
   private static final String HYPERTRACE_REPOSITORY_URL =
-      "https://hypertrace.jfrog.io/artifactory/maven";
+      "https://us-maven.pkg.dev/hypertrace-repos/maven";
   private static final String CONFLUENT_REPOSITORY_URL = "https://packages.confluent.io/maven";
   private static final List<String> DEFAULT_LOCKED_CONFIGURATIONS =
       List.of(
@@ -187,7 +187,7 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
    *     mavenLocal()
    *     mavenCentral()
    *     maven("https://packages.confluent.io/maven")
-   *     maven("https://hypertrace.jfrog.io/artifactory/maven")
+   *     maven("https://us-maven.pkg.dev/hypertrace-repos/maven")
    *   }
    * }
    * </pre>

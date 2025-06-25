@@ -3,7 +3,7 @@ pluginManagement {
     mavenLocal()
     gradlePluginPortal()
     maven {
-      url = uri("https://hypertrace.jfrog.io/artifactory/maven")
+      url = uri("https://us-maven.pkg.dev/hypertrace-repos/maven")
     }
   }
 }
