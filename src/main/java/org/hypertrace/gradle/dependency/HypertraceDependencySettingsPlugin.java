@@ -46,22 +46,24 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
     settings
         .getGradle()
         .allprojects(
-            project ->
-                project
-                    .getPluginManager()
-                    .withPlugin(
-                        "java",
-                        unused -> {
-                          DependencyPluginProjectExtension projectExtension =
-                              this.addProjectExtension(project);
-                          this.assignDefaultConfigurationsToLock(project, projectExtension);
-                          this.addBomDependencyIfRequested(
-                              project, settingExtension, projectExtension);
-                          if (settingExtension.useDependencyLocking.get()) {
-                            this.addDependencyLocking(project, projectExtension);
-                            this.addLockTask(project, projectExtension);
-                          }
-                        }));
+            project -> {
+              this.configureLz4JavaCapabilityResolution(project);
+              project
+                  .getPluginManager()
+                  .withPlugin(
+                      "java",
+                      unused -> {
+                        DependencyPluginProjectExtension projectExtension =
+                            this.addProjectExtension(project);
+                        this.assignDefaultConfigurationsToLock(project, projectExtension);
+                        this.addBomDependencyIfRequested(
+                            project, settingExtension, projectExtension);
+                        if (settingExtension.useDependencyLocking.get()) {
+                          this.addDependencyLocking(project, projectExtension);
+                          this.addLockTask(project, projectExtension);
+                        }
+                      });
+            });
   }
 
   private DependencyPluginSettingExtension createSettingsExtension(Settings target) {
@@ -310,5 +312,27 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
   private void configureHypertrace(MavenArtifactRepository artifactRepository) {
     artifactRepository.setName("hypertrace-maven");
     artifactRepository.setUrl(HYPERTRACE_REPOSITORY_URL);
+  }
+
+  /**
+   * Resolves the capability conflict between org.lz4:lz4-java and at.yawk.lz4:lz4-java caused by
+   * Sonatype's redirect for CVE-2025-12183. When both artifacts appear in the dependency graph,
+   * Gradle fails due to capability conflict. This resolution selects the relocated artifact.
+   */
+  private void configureLz4JavaCapabilityResolution(Project project) {
+    project
+        .getConfigurations()
+        .all(
+            configuration ->
+                configuration
+                    .getResolutionStrategy()
+                    .getCapabilitiesResolution()
+                    .withCapability(
+                        "org.lz4:lz4-java",
+                        details -> {
+                          details.select("at.yawk.lz4:lz4-java");
+                          details.because(
+                              "Both org.lz4 and at.yawk.lz4 provide lz4-java due to Sonatype redirect for CVE-2025-12183");
+                        }));
   }
 }
