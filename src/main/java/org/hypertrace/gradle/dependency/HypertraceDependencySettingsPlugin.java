@@ -330,7 +330,7 @@ public class HypertraceDependencySettingsPlugin implements Plugin<Settings> {
                     .withCapability(
                         "org.lz4:lz4-java",
                         details -> {
-                          details.select("at.yawk.lz4:lz4-java");
+                          details.select("at.yawk.lz4:lz4-java:1.10.1");
                           details.because(
                               "Both org.lz4 and at.yawk.lz4 provide lz4-java due to Sonatype redirect for CVE-2025-12183");
                         }));
